@@ -1,0 +1,35 @@
+pipeline{
+    agent any
+    
+    environment{
+        PATH = "/opt/maven3/bin:$PATH"
+    }
+    stages{
+        stage("Git Checkout"){
+            steps{
+               git credentialsId: 'jenkins-id', url: 'https://github.com/sivaram101204/Jenkins-decnew.git'
+            }
+        }
+        stage("Maven Build"){
+            steps{
+                sh "mvn clean package"
+                sh "mv target/*.war target/myweb.war"
+            }
+        }
+        stage("deploy-dev"){
+            steps{
+                sshagent(['tomcat-new']) {
+                sh """
+                    scp -o StrictHostKeyChecking=no target/myweb.war  azadmin@172.191.7.86:/home/azadmin/apache-tomcat-9.0.105/webapps/
+                    
+                    ssh ec2-user@172.191.7.86 /home/azadmin/apache-tomcat-9.0.105/bin/shutdown.sh
+                    
+                    ssh ec2-user@ 172.191.7.86 /home/azadmin/apache-tomcat-9.0.105/bin/startup.sh
+                
+                """
+            }
+            
+            }
+        }
+    }
+}
